@@ -1,6 +1,6 @@
 # Custom 1090 MHz ADS-B Receiver
 
-> Dedicated receive-only ADS-B hardware platform with a custom 1090 MHz RF front-end, pulse-detection architecture, digital decoder, and USB output.
+> Receive-only ADS-B hardware platform with a custom 1090 MHz RF front-end, pulse detector, digital decoder, and USB output.
 
 ![Status](https://img.shields.io/badge/status-initial%20development-orange)
 ![Hardware](https://img.shields.io/badge/hardware-V0.1-blue)
@@ -15,58 +15,21 @@
 
 ## Overview
 
-The **Custom 1090 MHz ADS-B Receiver** is a purpose-built electronic receiver designed to capture and process aircraft Mode S and ADS-B transmissions on **1090 MHz**.
+The **Custom 1090 MHz ADS-B Receiver** is a dedicated receiver for aircraft Mode S and ADS-B transmissions at **1090 MHz**.
 
-The long-term objective is to create a complete hardware chain between a commercial 1090 MHz antenna and a host computer without relying on a general-purpose SDR receiver.
+The final system is intended to provide a complete signal chain from antenna to PC without using a general-purpose SDR:
 
-The planned system will:
-
-- receive weak 1090 MHz aircraft transmissions;
-- reject strong out-of-band interference;
-- amplify the desired RF signal;
-- convert RF pulse envelopes into digital logic pulses;
-- detect ADS-B preambles and decode Mode S frames;
-- verify received messages using CRC;
-- transmit valid frames to a computer through USB;
-- integrate with `readsb` and `tar1090` for live aircraft visualization.
+- RF filtering and low-noise amplification;
+- envelope or logarithmic detection;
+- comparator-based pulse conversion;
+- ADS-B preamble and frame decoding;
+- CRC verification;
+- USB output compatible with `readsb` and `tar1090`.
 
 > [!IMPORTANT]
-> **Hardware V0.1 is an early schematic and simulation milestone.**
+> **V0.1 is an early schematic and simulation revision.**
 >
-> The complete receiver, PCB layout, detector, digital decoder, and USB data interface have not yet been implemented.
-
----
-
-## Project Scope
-
-The project combines several areas of electrical engineering:
-
-- RF front-end design;
-- 1090 MHz filtering;
-- low-noise amplification;
-- controlled-impedance PCB design;
-- RF envelope and logarithmic detection;
-- high-speed analog comparison;
-- MCU or FPGA-based pulse decoding;
-- USB communication;
-- embedded firmware;
-- RF measurement and validation.
-
-The final receiver is intended to operate as a dedicated passive ADS-B monitoring device.
-
-### What the Project Is
-
-- a passive receive-only ADS-B receiver;
-- an educational RF and mixed-signal hardware platform;
-- a dedicated alternative to an SDR for 1090 MHz ADS-B reception;
-- a complete RF-to-USB engineering project.
-
-### What the Project Is Not
-
-- an active radar;
-- an ADS-B transmitter;
-- an aircraft communication device;
-- a system for generating, modifying, or spoofing aviation messages.
+> The power section, first RF filter, and first LNA stage are partially completed. The PCB, detector, decoder, firmware, and USB data interface are still under development.
 
 ---
 
@@ -75,16 +38,15 @@ The final receiver is intended to operate as a dedicated passive ADS-B monitorin
 ```mermaid
 flowchart LR
     ANT[1090 MHz Antenna]
-    ESD[SMA Input and RF ESD Protection]
+    ESD[RF ESD Protection]
     PRE[LC Preselector]
     LNA[PSA4-5043+ LNA]
     SAW[1090 MHz SAW Filter]
     DET[RF Detector]
-    COMP[High-Speed Comparator]
+    COMP[Comparator]
     DEC[MCU or FPGA Decoder]
     USB[USB Interface]
-    READSB[readsb]
-    TAR[tar1090 Live Map]
+    PC[readsb / tar1090]
 
     ANT --> ESD
     ESD --> PRE
@@ -94,51 +56,30 @@ flowchart LR
     DET --> COMP
     COMP --> DEC
     DEC --> USB
-    USB --> READSB
-    READSB --> TAR
+    USB --> PC
 ```
 
-### Planned Signal Chain
-
 ```text
-1090 MHz antenna
- └─ SMA input
-    └─ Ultra-low-capacitance ESD protection
-       └─ Custom LC preselector
-          └─ PSA4-5043+ low-noise amplifier
-             └─ 1090 MHz SAW filter
-                └─ RF envelope / logarithmic detector
-                   └─ High-speed comparator
-                      └─ MCU or FPGA decoder
-                         └─ USB output
-                            └─ readsb
-                               └─ tar1090
+Antenna → SMA → RF ESD → LC preselector → LNA → SAW filter
+        → RF detector → comparator → MCU/FPGA → USB → readsb/tar1090
 ```
 
 ---
 
 ## Hardware V0.1
 
-Hardware V0.1 represents the first development stage of the receiver.
+The current revision includes:
 
-The current revision contains:
-
-- a partially completed USB-C power-input architecture;
-- input overcurrent and transient protection;
-- preliminary 5 V and low-noise 3.3 V power rails;
-- an SMA RF input;
+- partial USB-C power-input section;
+- resettable fuse and transient protection;
+- preliminary 5 V and low-noise 3.3 V rails;
+- SMA RF input;
 - ultra-low-capacitance RF ESD protection;
-- a custom 1090 MHz LC preselector;
-- a PSA4-5043+ LNA stage;
-- LNA biasing and multi-frequency power decoupling;
-- a prepared connection toward the next RF filtering stage;
-- Monte Carlo simulation of the LC preselector.
+- custom 1090 MHz LC preselector;
+- PSA4-5043+ LNA with bias and decoupling;
+- Monte Carlo simulation of the preselector.
 
-The detector, comparator, decoder, USB data interface, PCB layout, and firmware remain under development.
-
----
-
-## V0.1 Schematic
+### Schematics
 
 | USB-C power section | RF front-end |
 |---|---|
@@ -146,21 +87,9 @@ The detector, comparator, decoder, USB data interface, PCB layout, and firmware 
 
 ---
 
-## Power Architecture
+## Power Section
 
-The receiver is powered through a USB-C connector.
-
-The V0.1 power-input section currently contains:
-
-- USB-C VBUS input;
-- two 5.1 kΩ USB Type-C configuration resistors;
-- resettable input fuse;
-- transient-voltage suppression;
-- 10 µF bulk input capacitance;
-- 100 nF high-frequency decoupling;
-- protected 5 V rail;
-- TPS7A2033 low-noise 3.3 V regulator;
-- dedicated filtering for the RF amplifier supply.
+The receiver is powered from USB-C VBUS.
 
 ```text
 USB-C VBUS
@@ -173,87 +102,69 @@ USB-C VBUS
           └─ +3.3 V rail
 ```
 
-### Main Power Components
+| Function | Component |
+|---|---|
+| USB-C connector | DX07S024JJ3R1300 |
+| CC resistors | 5.1 kΩ |
+| Resettable fuse | 1206L050YR |
+| VBUS protection | ESD9B5.0ST5G |
+| 3.3 V regulator | TPS7A2033PDBVR |
+| RF supply ferrite | BLM18AG102SN1D |
 
-| Function | Component | Purpose |
-|---|---|---|
-| USB-C connector | DX07S024JJ3R1300 | Power input and future USB communication |
-| USB-C CC resistors | 5.1 kΩ | USB-C sink configuration |
-| Input fuse | Littelfuse 1206L050YR | Resettable input overcurrent protection |
-| VBUS protection | ESD9B5.0ST5G | Suppression of input transients |
-| 3.3 V regulator | TPS7A2033PDBVR | Low-noise 3.3 V supply |
-| RF supply ferrite | BLM18AG102SN1D | Isolation of RF and power-supply noise |
-
-> [!NOTE]
-> The power architecture is only partially completed in V0.1. Additional supply separation, test points, protection, and digital power sections will be added in future revisions.
+Additional supply separation, protection, and test points will be added in later revisions.
 
 ---
 
-## RF Input
-
-The RF input uses a 50 Ω SMA interface followed by an RF protection device and the custom LC preselector.
+## RF Front-End
 
 ```text
 SMA
  └─ RCLAMP0502BATCT
     └─ 1090 MHz LC preselector
        └─ PSA4-5043+ LNA
+          └─ 1090 MHz SAW filter
 ```
-
-### RF Input Components
 
 | Function | Component |
 |---|---|
 | RF connector | WR-SMA end-launch connector |
 | RF ESD protection | RCLAMP0502BATCT |
-| Preselector | Custom LC high-pass / low-pass network |
-| Low-noise amplifier | Mini-Circuits PSA4-5043+ |
-| LNA supply filter | BLM18AG102SN1D |
-| LNA bias choke | Coilcraft 0603CS-68NX |
-
-The ESD protection device must be placed directly next to the SMA connector to minimize the unprotected RF path.
+| Preselector | Custom LC band-pass network |
+| LNA | Mini-Circuits PSA4-5043+ |
+| Bias choke | Coilcraft 0603CS-68NX |
+| SAW filter | SF2321D |
 
 ---
 
 ## 1090 MHz LC Preselector
 
-The first RF filter is a custom lumped-element preselector.
-
-Its main purpose is to reduce strong out-of-band interference before the LNA while maintaining low insertion loss around the ADS-B frequency.
-
-The filter combines:
-
-- a high-pass section for rejection of lower-frequency signals;
-- a low-pass section for suppression of higher-frequency interference;
-- realistic PCB and component parasitics included in simulation.
-
-### Filter Topology
+The first filter combines a high-pass and low-pass section to reduce out-of-band interference before the LNA.
 
 ```text
 RF IN
- └─ 3.0 pF series capacitor
-    ├─ 3.9 nH shunt inductor
-    └─ 3.0 pF series capacitor
-       └─ 5.6 nH series inductor
-          ├─ 4.7 pF shunt capacitor
-          └─ 5.6 nH series inductor
+ └─ 3.0 pF series
+    ├─ 3.9 nH shunt
+    └─ 3.0 pF series
+       └─ 5.6 nH series
+          ├─ 4.7 pF shunt
+          └─ 5.6 nH series
              └─ RF OUT
 ```
 
-### Filter Components
+### Components
 
-| Reference | Value | Package | Selected Component |
-|---|---:|---:|---|
-| `C_HP_IN` | 3.0 pF | 0402 | Murata GJM1555C1H3R0CB01D |
-| `L_HP_SHUNT` | 3.9 nH | 0603 | Coilcraft 0603CS-3N9XJRW |
-| `C_HP_OUT` | 3.0 pF | 0402 | Murata GJM1555C1H3R0CB01D |
-| `L_LP_IN` | 5.6 nH | 0603 | Coilcraft 0603CS-5N6XJRW |
-| `C_LP_SHUNT` | 4.7 pF | 0402 | Murata GJM1555C1H4R7CB01D |
-| `L_LP_OUT` | 5.6 nH | 0603 | Coilcraft 0603CS-5N6XJRW |
+| Reference | Value | Package |
+|---|---:|---:|
+| `C_HP_IN` | 3.0 pF | 0402 |
+| `L_HP_SHUNT` | 3.9 nH | 0603 |
+| `C_HP_OUT` | 3.0 pF | 0402 |
+| `L_LP_IN` | 5.6 nH | 0603 |
+| `C_LP_SHUNT` | 4.7 pF | 0402 |
+| `L_LP_OUT` | 5.6 nH | 0603 |
 
-### Filter Schematics
+### Schematics
 
-| Ideal LC topology | Model with physical parasitics |
+| Ideal topology | Model with parasitics |
 |---|---|
 | ![Ideal filter](Photos/VER_0.1/filtr_ver0.1.png) | ![Realistic filter model](Photos/VER_0.1/filtr_real_ver0.1.png) |
 
@@ -261,35 +172,19 @@ RF IN
 
 ## Filter Simulation
 
-The preselector was evaluated using an AC sweep and Monte Carlo analysis.
+The preselector was evaluated using a 50-run Monte Carlo AC sweep.
 
-### Simulation Setup
+### Simulation Conditions
 
-- frequency sweep: **100 MHz to 3 GHz**;
-- source impedance: **50 Ω**;
-- load impedance: **50 Ω**;
-- Monte Carlo runs: **50**;
-- LC component tolerance: approximately **5%**;
+- frequency range: **100 MHz to 3 GHz**;
+- source and load impedance: **50 Ω**;
+- LC tolerance: approximately **5%**;
 - parasitic tolerance: approximately **10–20%**;
-- modeled ESD and input capacitance;
-- modeled capacitor and inductor ESR;
-- modeled ground-via inductance;
-- modeled LNA input capacitance.
+- modeled ESR, ground-via inductance, ESD capacitance, and LNA input capacitance.
 
-### Modeled Parasitics
+### Simulated Results
 
-| Parameter | Model Value | Physical Meaning |
-|---|---:|---|
-| Input parasitic capacitance | 1.0 pF | ESD diode, SMA pad, and input routing |
-| Output parasitic capacitance | 0.3 pF | Approximate LNA input loading |
-| Shunt ground inductance | 0.8 nH | Pads, vias, and ground connection |
-| Inductor ESR | 1.0 Ω | Finite inductor Q and RF losses |
-| Capacitor ESR | 0.1 Ω | Capacitor RF losses |
-| Input trace resistance | 0.1 Ω | Approximate physical routing loss |
-
-### Simulated Performance
-
-| Parameter | Simulated Result |
+| Parameter | Result |
 |---|---:|
 | Target frequency | 1090 MHz |
 | Best-case insertion loss | approximately −1.02 dB |
@@ -297,13 +192,10 @@ The preselector was evaluated using an AC sweep and Monte Carlo analysis.
 | Worst-case insertion loss | approximately −1.65 dB |
 | Attenuation at 714 MHz | approximately −9.4 to −12.0 dB |
 | Attenuation at 100 MHz | approximately −60 dB |
-| High-frequency response | Strong attenuation notch around 2.4–3.0 GHz |
 
-These results are based entirely on circuit simulation. They have not yet been confirmed through measurements on manufactured hardware.
+These values are simulation results and have not yet been confirmed on manufactured hardware.
 
-### Monte Carlo Results
-
-| Full frequency sweep | 1090 MHz region |
+| Full sweep | 1090 MHz region |
 |---|---|
 | ![Monte Carlo full sweep](Photos/VER_0.1/SIM1_ver0.1.png) | ![Monte Carlo 1090 MHz](Photos/VER_0.1/SIM2_ver0.1.png) |
 
@@ -315,264 +207,155 @@ These results are based entirely on circuit simulation. They have not yet been c
 
 ## Low-Noise Amplifier
 
-The first amplification stage is based on the **Mini-Circuits PSA4-5043+** E-PHEMT MMIC amplifier.
-
-The LNA is positioned directly after the custom LC preselector.
+The first gain stage uses the **Mini-Circuits PSA4-5043+**.
 
 ```text
 LC preselector
- └─ 100 pF input DC-blocking capacitor
-    └─ PSA4-5043+ LNA
+ └─ 100 pF DC block
+    └─ PSA4-5043+
        ├─ 68 nH bias choke
-       ├─ 100 pF bypass capacitor
-       ├─ 1 nF bypass capacitor
-       ├─ 100 nF bypass capacitor
-       ├─ 1 µF bypass capacitor
-       └─ 100 pF output DC-blocking capacitor
+       ├─ 100 pF bypass
+       ├─ 1 nF bypass
+       ├─ 100 nF bypass
+       ├─ 1 µF local bulk capacitor
+       └─ 100 pF output DC block
 ```
 
-### LNA Components
-
-| Reference | Value | Package | Purpose |
-|---|---:|---:|---|
-| LNA | PSA4-5043+ | SOT-343 | Low-noise RF amplification |
-| `C_LNA_IN` | 100 pF | 0402 | Input DC blocking |
-| `C_LNA_OUT` | 100 pF | 0402 | Output DC blocking |
-| `L_LNA_BIAS` | 68 nH | 0603 | RF choke and DC bias feed |
-| `C_LNA_BYP_100pF` | 100 pF | 0402 | RF-frequency decoupling |
-| `C_LNA_BYP_1nF` | 1 nF | 0402 | Intermediate-frequency decoupling |
-| `C_LNA_BYP_100nF` | 100 nF | 0402 | Low-frequency decoupling |
-| `C_LNA_BYP_1uF` | 1 µF | 0603 | Local bulk capacitance |
-| `FB_LNA_SUPPLY` | BLM18AG102SN1D | 0603 | LNA supply isolation |
-
-The LNA supply is injected through its RF output pin using the 68 nH bias choke.
-
-The cascaded bypass network is intended to suppress power-supply noise across a wide frequency range.
+| Reference | Value | Purpose |
+|---|---:|---|
+| `C_LNA_IN` | 100 pF | Input DC blocking |
+| `C_LNA_OUT` | 100 pF | Output DC blocking |
+| `L_LNA_BIAS` | 68 nH | Bias feed and RF choke |
+| `C_LNA_BYP_100pF` | 100 pF | RF decoupling |
+| `C_LNA_BYP_1nF` | 1 nF | Intermediate-frequency decoupling |
+| `C_LNA_BYP_100nF` | 100 nF | Low-frequency decoupling |
+| `C_LNA_BYP_1uF` | 1 µF | Local bulk capacitance |
 
 ---
 
-## RF PCB Design Requirements
+## PCB Requirements
 
-The RF section will require careful PCB implementation because ordinary traces and ground connections become significant circuit elements at 1090 MHz.
+The RF path will use controlled 50 Ω routing and a continuous ground plane.
 
-### Critical Layout Rules
+Key layout requirements:
 
-- use controlled 50 Ω RF traces;
-- keep the SMA-to-LNA signal chain as short as possible;
-- maintain a continuous ground plane beneath the RF path;
-- avoid branches and unused RF stubs;
-- place the RF ESD device immediately next to the SMA connector;
-- place shunt filter components directly next to ground vias;
-- use multiple low-inductance ground vias;
-- connect LNA ground pins directly to the ground plane;
-- avoid thermal reliefs on RF grounding pads;
-- physically separate LNA input and output routing;
-- place the smallest LNA bypass capacitor closest to the bias choke;
-- isolate the RF section from MCU, USB, and digital clock routing;
-- use ground-via stitching around the RF signal path.
+- shortest possible SMA-to-LNA path;
+- ESD device directly beside the SMA connector;
+- short shunt-component ground connections;
+- multiple low-inductance ground vias;
+- no RF stubs or unnecessary branches;
+- physical separation between LNA input and output;
+- decoupling capacitors placed directly beside the bias network;
+- separation of RF, USB, MCU, and digital-clock routing;
+- ground-via stitching around the RF section.
 
-A four-layer PCB is currently preferred for the final integrated receiver:
+A four-layer stackup is preferred:
 
 ```text
 Layer 1: RF components and controlled-impedance routing
-Layer 2: Solid uninterrupted ground plane
+Layer 2: Solid ground plane
 Layer 3: Power distribution
-Layer 4: Digital signals, USB, and low-speed control
+Layer 4: Digital signals and USB
 ```
 
 ---
 
-## Planned RF Detection Stage
+## Planned Stages
 
-After the LNA and SAW filtering stages, the 1090 MHz RF signal must be converted into a lower-frequency analog envelope.
+### RF Detection
 
-Several architectures are planned for evaluation:
+The filtered RF signal will be converted into a baseband pulse envelope. Planned options include:
 
-1. simple Schottky envelope detector;
-2. custom successive-detection logarithmic amplifier;
-3. commercial RF logarithmic detector IC.
+- Schottky envelope detector;
+- custom successive-detection logarithmic amplifier;
+- commercial logarithmic detector IC.
 
-The outputs of these architectures can be compared according to:
+### Comparator
 
-- sensitivity;
-- dynamic range;
-- pulse rise and fall time;
-- timing distortion;
-- detector output voltage;
-- noise level;
-- comparator false-trigger rate;
-- PCB area;
-- current consumption;
-- implementation complexity.
+A high-speed comparator will convert the detector output into 3.3 V digital pulses using an adjustable threshold.
 
-The preferred experimental direction is a custom four-stage successive-detection logarithmic amplifier with a commercial detector path retained as a reference.
+### Digital Decoder
 
----
-
-## Planned Comparator Stage
-
-A high-speed comparator will convert the analog detector output into clean 3.3 V logic pulses.
-
-```text
-Detector output
- └─ Comparator input
-    ├─ Adjustable threshold
-    └─ 3.3 V digital pulse output
-```
-
-The threshold will initially be manually adjustable.
-
-Future revisions may support an MCU-controlled threshold generated through PWM filtering or a DAC.
-
-Important comparator requirements include:
-
-- 3.3 V operation;
-- low propagation delay;
-- low input offset;
-- detector-compatible input common-mode range;
-- clean logic-level output;
-- accessible threshold and output test points.
-
----
-
-## Planned Digital Decoder
-
-The digital decoder will analyze the comparator output and process the ADS-B pulse timing.
-
-Planned responsibilities include:
+The MCU or FPGA will perform:
 
 - edge timestamping;
 - ADS-B preamble detection;
-- pulse-position bit decoding;
-- recognition of 56-bit and 112-bit Mode S frames;
+- 56-bit and 112-bit frame decoding;
 - CRC verification;
-- rejection of corrupted frames;
-- output of valid messages over USB.
+- USB output of valid messages.
 
-The first prototype may use an external MCU development board.
-
-An FPGA-based timing front-end remains a possible later improvement.
-
----
-
-## PC Software Architecture
-
-The planned host-side data path is:
+### PC Interface
 
 ```text
-Custom receiver
- └─ USB serial or binary stream
-    └─ readsb
-       └─ aircraft.json
-          └─ tar1090
-             └─ Live aircraft map
+Custom receiver → USB → readsb → tar1090
 ```
 
-Two output modes are planned:
-
-### Debug Mode
-
-Decoded frames are transmitted as ASCII hexadecimal strings.
-
-Example:
-
-```text
-8D40621D58C382D690C8AC2863A7
-```
-
-### readsb-Compatible Mode
-
-The receiver outputs messages using a format compatible with `readsb`, potentially through the Mode S Beast protocol.
+Debug output will initially use ASCII hexadecimal Mode S frames. A later revision may implement the Mode S Beast protocol.
 
 ---
 
 ## Development Roadmap
 
-| Version | Development Stage | Main Deliverable |
-|---|---|---|
-| V0 | RTL-SDR baseline | Working antenna, `readsb`, and `tar1090` reference system |
-| **V0.1** | Initial schematic development | Partial power supply, LC preselector, LNA, and filter simulation |
-| V0.2 | Complete RF front-end | Final filtering, RF detector interfaces, and complete power architecture |
-| V0.3 | Detector prototypes | Envelope and logarithmic detector simulations |
-| V0.4 | Comparator stage | Adjustable threshold and digital pulse output |
-| V0.5 | RF prototype PCB | Manufactured and measured RF front-end |
-| V0.6 | External decoder | MCU or FPGA development-board decoder |
-| V0.7 | USB and readsb integration | Valid ADS-B messages delivered to the PC |
-| V1.0 | Integrated receiver PCB | Complete RF, detector, decoder, and USB receiver |
+| Version | Main Goal |
+|---|---|
+| V0 | RTL-SDR reference system |
+| **V0.1** | Partial power section, LC preselector, LNA, and simulations |
+| V0.2 | Complete RF front-end and power architecture |
+| V0.3 | Detector prototypes |
+| V0.4 | Comparator and adjustable threshold |
+| V0.5 | Manufactured RF prototype PCB |
+| V0.6 | External MCU or FPGA decoder |
+| V0.7 | USB and `readsb` integration |
+| V1.0 | Complete integrated receiver |
 
 ---
 
-## Current Project Status
+## Current Status
 
-### Completed in V0.1
+### Completed
 
-- overall receiver architecture defined;
-- principal RF components selected;
-- USB-C power-input section started;
-- resettable fuse and VBUS protection added;
-- low-noise 3.3 V regulator selected and added;
-- SMA RF input added;
-- RF ESD protection selected;
-- custom 1090 MHz LC preselector designed;
-- realistic filter parasitics modeled;
+- receiver architecture defined;
+- main RF components selected;
+- USB-C power section started;
+- input protection added;
+- LC preselector designed;
+- realistic parasitics modeled;
 - Monte Carlo simulation completed;
-- PSA4-5043+ LNA stage designed;
-- LNA bias choke and decoupling network added;
-- schematic documentation images exported.
+- PSA4-5043+ LNA stage designed.
 
 ### In Progress
 
-- completion of the full power architecture;
-- final RF power-rail separation;
-- downstream SAW filter verification;
-- RF detector architecture;
-- successive-detection log-amplifier simulation;
-- detector comparison path;
-- comparator and threshold circuit;
-- RF test-point architecture;
-- PCB stackup and controlled-impedance calculations.
+- complete power architecture;
+- SAW filter integration;
+- detector selection and simulation;
+- comparator design;
+- RF test points;
+- PCB stackup and impedance calculation.
 
 ### Not Yet Implemented
 
-- complete PCB layout;
-- manufactured hardware;
+- PCB layout and manufactured hardware;
 - physical RF measurements;
-- RF detector;
-- comparator;
+- RF detector and comparator;
 - embedded ADS-B decoder;
 - USB data communication;
-- `readsb` integration;
-- `tar1090` operation from the custom receiver.
+- `readsb` and `tar1090` integration.
 
 ---
 
-## Testing and Validation Plan
-
-Each stage will be validated separately before integration.
+## Validation Plan
 
 | Test | Purpose |
 |---|---|
-| Power-rail test | Verify 5 V and 3.3 V voltage, noise, and current consumption |
-| Filter S-parameter test | Measure insertion loss and rejection around 1090 MHz |
-| LNA gain test | Verify RF gain, stability, and noise-floor behaviour |
-| Detector sweep | Measure detector output versus RF input power |
-| Pulse-response test | Verify ADS-B pulse rise time, fall time, and distortion |
-| Comparator test | Check threshold sensitivity and false triggering |
-| Decoder test | Decode known and recorded ADS-B pulse sequences |
-| Live antenna test | Receive real aircraft transmissions |
-| Baseline comparison | Compare results against an RTL-SDR reference receiver |
+| Power test | Verify voltage, noise, and current |
+| Filter measurement | Measure insertion loss and rejection |
+| LNA test | Verify gain and stability |
+| Detector test | Measure output versus RF input level |
+| Pulse test | Verify timing and pulse distortion |
+| Decoder test | Decode known ADS-B messages |
+| Live test | Receive real aircraft transmissions |
+| RTL-SDR comparison | Compare coverage and message rate |
 | Long-duration test | Verify thermal and USB stability |
-
-Important final performance metrics include:
-
-- valid ADS-B messages per second;
-- number of visible aircraft;
-- maximum reception distance;
-- CRC failure rate;
-- receiver current consumption;
-- RF gain;
-- detector sensitivity;
-- continuous operating stability.
 
 ---
 
@@ -583,38 +366,12 @@ custom-1090mhz-adsb-receiver/
 ├─ README.md
 ├─ Photos/
 │  └─ VER_0.1/
-│     ├─ 01_POWER_ver0.1.png
-│     ├─ 02_RF_FRONT_END_ver0.1.png
-│     ├─ filtr_ver0.1.png
-│     ├─ filtr_real_ver0.1.png
-│     ├─ SIM1_ver0.1.png
-│     ├─ SIM2_ver0.1.png
-│     └─ values_ver0.1.png
 ├─ Hardware/
 │  └─ Altium/
 ├─ Documentation/
 ├─ Firmware/
+└─ Tests/
 ```
-
-Hardware, simulation, and manufacturing files should be separated by revision as the project develops.
-
----
-
-## Future Improvements
-
-Possible future extensions include:
-
-- adaptive comparator threshold control;
-- FPGA-based preamble detection and bit slicing;
-- integrated 1090 MHz bias tee;
-- mast-mounted external LNA support;
-- RF shielding over the receiver front-end;
-- additional RF test connectors;
-- USB-C data communication;
-- automatic gain or sensitivity control;
-- custom enclosure;
-- long-term aircraft statistics and logging;
-- parallel 978 MHz UAT receiver path.
 
 ---
 
